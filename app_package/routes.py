@@ -39,7 +39,6 @@ def insert_new_customer():
                 VALUES (%s, %s, %s);"""
     data = (info["name"], info["phone"], info["points"])
     cursor.execute(query, data)
-    result = cursor.fetchall()
     return make_response('Customer added!', 200)
 
 @app.route('/search-customers-name', methods=['POST'])
