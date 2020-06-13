@@ -165,7 +165,7 @@ def search_orders_by_cust_id():
     cursor = db_conn.cursor()
 
     search_term = request.get_json(force=True)["id"]
-    query =  """SSELECT Orders.OrderID, Inventory.Name, Inventory.Description, Inventory.UnitCost, 
+    query =  """SELECT Orders.OrderID, Inventory.Name, Inventory.Description, Inventory.UnitCost, 
                 OrderItems.Quantity, (Inventory.UnitCost * OrderItems.Quantity) AS Total
                 FROM Inventory
                 JOIN OrderItems on OrderItems.PLU = Inventory.PLU
@@ -293,97 +293,126 @@ def delete_order_item():
 
 @app.route('/customerOrder')
 def customerOrder_page():
-    print('Fetching and rendering Customer Orders ')
     return render_template('customerOrder.html')
 
 @app.route('/get-customer-id', methods=['POST'])
 def get_customer_id():
-    print('Fetching customer id', flush=True)
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     search_term = request.get_json(force=True)["name"]
     query = """SELECT CustomerID FROM Customers WHERE Name = %s;"""
     data = (search_term,)
-    result = execute_query(db_connection, query, data).fetchall()
-    print('Query returns:', result, flush=True)
+
+    cursor.execute(query, data)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/insert-order', methods=['POST'])
 def insert_order():
-    print('Inserting new order into the database', flush=True)
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     info = request.get_json(force=True)
-    print("Info", info)
-    query =  """INSERT INTO `Orders` 
-                (`CustomerID`, `EmployeeID`)
-                VALUES (%s, %s);"""
+    query =  """INSERT INTO Orders (CustomerID, EmployeeID) VALUES (%s, %s);"""
     data = (info["CustomerID"], info["EmployeeID"])
-    execute_query(db_connection, query, data)
+
+    cursor.execute(query, data)
+    db_conn.commit()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response('Order added!', 200)
 
 @app.route('/get-order-id', methods=['POST'])
 def get_order_id():
-    print('Get most recent order id from database', flush=True)
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     query = """SELECT MAX(OrderID) FROM Orders;"""
-    result = execute_query(db_connection, query).fetchall()
-    print("result:",result)
+    cursor.execute(query)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/search-order-item', methods=['POST'])
 def search_order_item():
-    print('Fetching and rendering Order page', flush=True)
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     search_term = request.get_json(force=True)["name"]
     query = """SELECT PLU, Name, Description, UnitCost
                 FROM Inventory
                 WHERE Name LIKE %s
                 ORDER BY Name;"""
     data = (["%" + search_term + "%"])
-    result = execute_query(db_connection, query, data).fetchall()
-    print('Query returns:', result, flush=True)
+
+    cursor.execute(query, data)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/place-order', methods=['POST'])
 def place_order():
-    print("Place an Order and update OrderItems database", flush=True)
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     info = request.get_json(force=True)
     for item in info:
-        quantity = item['quantity']
-        order_id = item['OrderID']
-        plu = item['PLU']
-        query = """INSERT INTO `OrderItems` 
-                    (`Quantity`, `OrderID`, `PLU`) 
-                    VALUES (%s, %s, %s);"""
-        data = (quantity, order_id, plu)
-        execute_query(db_connection, query, data)
+        query =  """INSERT INTO OrderItems (Quantity, OrderID, PLU) VALUES (%s, %s, %s);"""
+        data = (item['quantity'], item['OrderID'], item['PLU'])
+
+        cursor.execute(query, data)
+        db_conn.commit()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response('Order added!', 200)
 
 @app.route('/customer-order-dropdown', methods=['POST'])
 def customer_order_dropdown():
-    print('Fetching List of Customer names')
-    db_connection = connect_to_database()
-    query = """SELECT Name FROM `Customers` ORDER BY Name;"""
-    result = execute_query(db_connection, query).fetchall()
-    print('Customer name results')
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
+    query = """SELECT Name FROM Customers ORDER BY Name;"""
+    cursor.execute(query)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/employee-order-dropdown', methods=['POST'])
 def employee_order_dropdown():
-    print('Fetching List of Employee names')
-    db_connection = connect_to_database()
-    query = """SELECT EmployeeID FROM `Employees`;"""
-    result = execute_query(db_connection, query).fetchall()
-    print('Employee name results')
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
+    query = """SELECT Name FROM Employees ORDER BY Name;"""
+    cursor.execute(query)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/cust-order-inv-dropdown', methods=['POST'])
 def cust_order_inv_dropdown():
-    print('Fetching List of Inventory names')
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     query = """SELECT Name FROM Inventory;"""
-    result = execute_query(db_connection, query).fetchall()
-    print('Inventory name results')
+    cursor.execute(query)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 ################################################
