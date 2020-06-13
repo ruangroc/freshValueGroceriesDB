@@ -24,6 +24,8 @@ def customers_page():
     cursor = db_conn.cursor()
     cursor.execute("SELECT CustomerID, Name, PhoneNumber, RewardsPts FROM Customers;")
     result = cursor.fetchall()
+    cursor.close()
+    db_pool.putconn(db_conn)
     print('Customers table query returns:', result, flush=True)
     return render_template('customers.html', rows=result)
 
@@ -39,6 +41,9 @@ def insert_new_customer():
                 VALUES (%s, %s, %s);"""
     data = (info["name"], info["phone"], info["points"])
     cursor.execute(query, data)
+    db_conn.commit()
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response('Customer added!', 200)
 
 @app.route('/search-customers-name', methods=['POST'])
