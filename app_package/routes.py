@@ -151,7 +151,7 @@ def orders_page():
                 OrderItems.OrderItemID AS Total FROM Inventory
                 JOIN OrderItems on OrderItems.PLU = Inventory.PLU
                 JOIN Orders on OrderItems.OrderID = Orders.OrderID
-                ORDER BY Orders.OrderID DESC;"""
+                ORDER BY Orders.OrderID ASC;"""
     cursor.execute(query)
     result = cursor.fetchall()
 
@@ -195,7 +195,7 @@ def search_orders_by_name():
                 JOIN Orders on OrderItems.OrderID = Orders.OrderID
                 JOIN Customers on Orders.CustomerID = Customers.CustomerID
                 AND Customers.Name = %s
-                ORDER BY Orders.OrderID DESC;"""
+                ORDER BY Orders.OrderID ASC;"""
     data = (search_term,)
 
     cursor.execute(query, data)
@@ -218,7 +218,7 @@ def search_orders_by_phone():
                 JOIN Orders on OrderItems.OrderID = Orders.OrderID
                 JOIN Customers on Orders.CustomerID = Customers.CustomerID
                 AND Customers.PhoneNumber = %s
-                ORDER BY Orders.OrderID DESC;"""
+                ORDER BY Orders.OrderID ASC;"""
     data = (search_term,)
 
     cursor.execute(query, data)
