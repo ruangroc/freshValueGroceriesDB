@@ -138,7 +138,7 @@ def update_customer():
     return make_response('Updated customer information', 200)
 
 ################################################
-# Orders
+# Manage Orders
 ################################################
 
 @app.route('/orders')
@@ -161,25 +161,35 @@ def orders_page():
 
 @app.route('/search-orders-cust-id', methods=['POST'])
 def search_orders_by_cust_id():
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     search_term = request.get_json(force=True)["id"]
-    query = """SELECT Orders.OrderID, Inventory.Name, Inventory.Description, Inventory.UnitCost, OrderItems.Quantity, (Inventory.UnitCost * OrderItems.Quantity) AS `Total`
+    query =  """SSELECT Orders.OrderID, Inventory.Name, Inventory.Description, Inventory.UnitCost, 
+                OrderItems.Quantity, (Inventory.UnitCost * OrderItems.Quantity) AS Total
                 FROM Inventory
                 JOIN OrderItems on OrderItems.PLU = Inventory.PLU
                 JOIN Orders on OrderItems.OrderID = Orders.OrderID
                 JOIN Customers on Orders.CustomerID = Customers.CustomerID
                 AND Customers.CustomerID = %s
-                ORDER BY Orders.OrderID DESC;"""
+                ORDER BY Orders.OrderID ASC;"""
     data = (search_term,)
-    result = execute_query(db_connection, query, data).fetchall()
-    print('Query returns:', result, flush=True)
+
+    cursor.execute(query, data)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/search-orders-name', methods=['POST'])
 def search_orders_by_name():
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     search_term = request.get_json(force=True)["name"]
-    query = """SELECT Orders.OrderID, Inventory.Name, Inventory.Description, Inventory.UnitCost, OrderItems.Quantity, (Inventory.UnitCost * OrderItems.Quantity) AS `Total`
+    query = """SELECT Orders.OrderID, Inventory.Name, Inventory.Description, Inventory.UnitCost, 
+                OrderItems.Quantity, (Inventory.UnitCost * OrderItems.Quantity) AS Total
                 FROM Inventory
                 JOIN OrderItems on OrderItems.PLU = Inventory.PLU
                 JOIN Orders on OrderItems.OrderID = Orders.OrderID
@@ -187,15 +197,22 @@ def search_orders_by_name():
                 AND Customers.Name = %s
                 ORDER BY Orders.OrderID DESC;"""
     data = (search_term,)
-    result = execute_query(db_connection, query, data).fetchall()
-    print('Query returns:', result, flush=True)
+
+    cursor.execute(query, data)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/search-orders-phone', methods=['POST'])
 def search_orders_by_phone():
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     search_term = request.get_json(force=True)["phone"]
-    query = """SELECT Orders.OrderID, Inventory.Name, Inventory.Description, Inventory.UnitCost, OrderItems.Quantity, (Inventory.UnitCost * OrderItems.Quantity) AS `Total`
+    query = """SELECT Orders.OrderID, Inventory.Name, Inventory.Description, Inventory.UnitCost, 
+                OrderItems.Quantity, (Inventory.UnitCost * OrderItems.Quantity) AS Total
                 FROM Inventory
                 JOIN OrderItems on OrderItems.PLU = Inventory.PLU
                 JOIN Orders on OrderItems.OrderID = Orders.OrderID
@@ -203,53 +220,76 @@ def search_orders_by_phone():
                 AND Customers.PhoneNumber = %s
                 ORDER BY Orders.OrderID DESC;"""
     data = (search_term,)
-    result = execute_query(db_connection, query, data).fetchall()
-    print('Query returns:', result, flush=True)
+
+    cursor.execute(query, data)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/search-orders-employee', methods=['POST'])
 def search_orders_by_employee():
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     search_term = request.get_json(force=True)["employee"]
-    query = """SELECT Orders.OrderID, Inventory.Name, Inventory.Description, Inventory.UnitCost, OrderItems.Quantity, (Inventory.UnitCost * OrderItems.Quantity) AS `Total`
+    query = """SELECT Orders.OrderID, Inventory.Name, Inventory.Description, Inventory.UnitCost, 
+                OrderItems.Quantity, (Inventory.UnitCost * OrderItems.Quantity) AS Total
                 FROM Inventory
                 JOIN OrderItems on OrderItems.PLU = Inventory.PLU
                 JOIN Orders on OrderItems.OrderID = Orders.OrderID
                 JOIN Employees on Orders.EmployeeID = Employees.EmployeeID
                 AND Employees.Name = %s
-                ORDER BY Orders.OrderID DESC;"""
+                ORDER BY Orders.OrderID ASC;"""
     data = (search_term,)
-    result = execute_query(db_connection, query, data).fetchall()
-    print('Query returns:', result, flush=True)
+
+    cursor.execute(query, data)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/update-orders', methods=['POST'])
 def update_orders():
-    print("Updating OrderItems in database", flush=True)
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     OrderItemID = request.get_json(force=True)['id']
     quantity = int(request.get_json(force=True)['quantity'])
-
-    # Update Quantity of items ordered
-    query = """UPDATE `OrderItems`
-            SET
-                `Quantity` = %s
-            WHERE
-                `OrderItemID` = %s;"""
     data = (quantity, OrderItemID)
-    execute_query(db_connection, query, data)
+    # Update Quantity of items ordered
+    query = """UPDATE OrderItems
+            SET Quantity = %s
+            WHERE OrderItemID = %s;"""
+
+    cursor.execute(query, data)
+    db_conn.commit()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response('Inventory added!', 200)
 
 @app.route('/delete-order-item', methods=['POST'])
 def delete_order_item():
-    print("Deleting OrderItems from database", flush=True)
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     OrderItemID = request.get_json(force=True)["info"]
-    print("id:", OrderItemID)
-    query = """DELETE FROM `OrderItems` WHERE `OrderItemID` = %s;"""
+    query = """DELETE FROM OrderItems WHERE OrderItemID = %s;"""
     data = (OrderItemID,)
-    execute_query(db_connection, query, data)
+
+    cursor.execute(query, data)
+    db_conn.commit()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response('OrderItem deleted!', 200)
+
+################################################
+# Place an Order
+################################################
 
 @app.route('/customerOrder')
 def customerOrder_page():
