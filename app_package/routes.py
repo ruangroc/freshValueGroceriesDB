@@ -143,15 +143,20 @@ def update_customer():
 
 @app.route('/orders')
 def orders_page():
-    print('Fetching and rendering Orders page', flush=True)
-    db_connection = connect_to_database()
-    query = """SELECT Orders.OrderID, Inventory.Name, Inventory.Description, Inventory.UnitCost, OrderItems.Quantity, (Inventory.UnitCost * OrderItems.Quantity), OrderItems.OrderItemID AS `Total`
-                FROM Inventory
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
+    query =  """SELECT Orders.OrderID, Inventory.Name, Inventory.Description, Inventory.UnitCost, 
+                OrderItems.Quantity, (Inventory.UnitCost * OrderItems.Quantity), 
+                OrderItems.OrderItemID AS Total FROM Inventory
                 JOIN OrderItems on OrderItems.PLU = Inventory.PLU
                 JOIN Orders on OrderItems.OrderID = Orders.OrderID
                 ORDER BY Orders.OrderID DESC;"""
-    result = execute_query(db_connection, query).fetchall()
-    print('Orders table query returns:', result, flush=True)
+    cursor.execute(query)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return render_template('orders.html', results=result)
 
 @app.route('/search-orders-cust-id', methods=['POST'])
@@ -346,11 +351,16 @@ def cust_order_inv_dropdown():
 ################################################
 @app.route('/employees')
 def employees_page():
-    print('Fetching and rendering Employees page', flush=True)
-    db_connection = connect_to_database()
-    query = "SELECT EmployeeID, Name, HourlyWage, Responsibilities, SickDays FROM Employees;"
-    result = execute_query(db_connection, query).fetchall()
-    print('Employees table query returns:', result, flush=True)
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
+    query =  """SELECT EmployeeID, Name, HourlyWage, Responsibilities, 
+                SickDays FROM Employees;"""
+    cursor.execute(query)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return render_template('employees.html', rows=result)
 
 @app.route('/get-shifts', methods=['POST'])
@@ -478,11 +488,14 @@ def update_employee():
 ################################################
 @app.route('/shifts')
 def shifts_page():
-    print('Fetching and rendering Shifts page', flush=True)
-    db_connection = connect_to_database()
-    query = "SELECT ShiftID, Day, StartTime, EndTime FROM Shifts;"
-    result = execute_query(db_connection, query).fetchall()
-    print('Shifts table query returns:', result, flush=True)
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
+    cursor.execute("SELECT ShiftID, Day, StartTime, EndTime FROM Shifts;")
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return render_template('shifts.html', rows=result)
 
 @app.route('/new-shift', methods=['POST'])
@@ -609,11 +622,14 @@ def update_shift():
 ################################################
 @app.route('/inventory')
 def inventory_page():
-    print('Fetching and rendering Inventory page', flush=True)
-    db_connection = connect_to_database()
-    query = "SELECT PLU, Name, Description, UnitCost, Quantity FROM Inventory;"
-    result = execute_query(db_connection, query).fetchall()
-    print('Inventory table query returns: ', result, flush=True)
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
+    cursor.execute("SELECT PLU, Name, Description, UnitCost, Quantity FROM Inventory;")
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return render_template('inventory.html', results=result)
 
 @app.route('/new-inventory', methods=['POST'])
