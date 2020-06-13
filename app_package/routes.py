@@ -24,25 +24,22 @@ def customers_page():
     cursor = db_conn.cursor()
     cursor.execute("SELECT CustomerID, Name, PhoneNumber, RewardsPts FROM Customers;")
     result = cursor.fetchall()
-
-    # Old method
-    # db_connection = connect_to_database()
-    # query = "SELECT CustomerID, Name, PhoneNumber, RewardsPts FROM Customers;"
-    # result = execute_query(db_connection, query).fetchall()
-
     print('Customers table query returns:', result, flush=True)
     return render_template('customers.html', rows=result)
 
 @app.route('/new-customer', methods=['POST'])
 def insert_new_customer():
     print('Inserting new customer into the database', flush=True)
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
     info = request.get_json(force=True)
-    query =  """INSERT INTO `Customers` 
-                (`Name`, `PhoneNumber`, `RewardsPts`) 
+
+    query =  """INSERT INTO Customers 
+                (Name, PhoneNumber, RewardsPts) 
                 VALUES (%s, %s, %s);"""
     data = (info["name"], info["phone"], info["points"])
-    execute_query(db_connection, query, data)
+    cursor.execute(query, data)
+    result = cursor.fetchall()
     return make_response('Customer added!', 200)
 
 @app.route('/search-customers-name', methods=['POST'])
