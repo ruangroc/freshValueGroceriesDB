@@ -22,7 +22,9 @@ def customers_page():
     db_conn = db_pool.getconn()
     cursor = db_conn.cursor()
 
-    cursor.execute("SELECT CustomerID, Name, PhoneNumber, RewardsPts FROM Customers;")
+    query = """SELECT CustomerID, Name, PhoneNumber, RewardsPts 
+            FROM Customers ORDER BY CustomerID ASC;"""
+    cursor.execute(query)
     result = cursor.fetchall()
 
     cursor.close()
@@ -130,7 +132,7 @@ def update_customer():
 
     cursor.execute(query, data)
     db_conn.commit()
-    
+
     cursor.close()
     db_pool.putconn(db_conn)
     return make_response('Updated customer information', 200)
