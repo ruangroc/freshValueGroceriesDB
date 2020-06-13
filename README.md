@@ -14,3 +14,8 @@ A database for managing Employees, Shifts, Inventory, and Orders at Fresh Value 
 7. To serve the flask app using gunicorn, use the command ```gunicorn webapp:app -b 0.0.0.0:55722``` inside of the pipenv shell. 
 8. To serve persistently, use ```python3 -m pipenv run gunicorn webapp:app -b 0.0.0.0:55722 -D```. To kill this daemon, go to 'https://teach.engr.oregonstate.edu/teach.php' and use the 'Kill Runaway Processes' tool located in the 'Account Tools' section of the sidebar. 
 
+
+# Notes for prepping this to be hosted on Heroku
+
+1. 
+
