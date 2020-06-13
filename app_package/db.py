@@ -1,4 +1,4 @@
-from app import app
+from app_package import app
 from psycopg2 import pool
 from urllib.parse import urlparse
 
