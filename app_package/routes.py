@@ -20,9 +20,16 @@ def index():
 @app.route('/customers')
 def customers_page():
     print('Fetching and rendering Customers page', flush=True)
-    db_connection = connect_to_database()
-    query = "SELECT CustomerID, Name, PhoneNumber, RewardsPts FROM Customers;"
-    result = execute_query(db_connection, query).fetchall()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+    cursor.execute("SELECT CustomerID, Name, PhoneNumber, RewardsPts FROM Customers;")
+    result = cursor.fetchall()
+
+    # Old method
+    # db_connection = connect_to_database()
+    # query = "SELECT CustomerID, Name, PhoneNumber, RewardsPts FROM Customers;"
+    # result = execute_query(db_connection, query).fetchall()
+
     print('Customers table query returns:', result, flush=True)
     return render_template('customers.html', rows=result)
 
