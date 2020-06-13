@@ -44,7 +44,7 @@ function insertNewCustomer() {
     }).then(function (text) {
         console.log('Server response:', text);
         // refresh the page to show updated table
-        // window.location.reload();
+        window.location.reload();
     });
 }
 
