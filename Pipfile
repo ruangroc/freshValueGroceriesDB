@@ -9,6 +9,9 @@ verify_ssl = true
 flask = "*"
 mysqlclient = "*"
 gunicorn = "*"
+"psycopg2" = "*"
+python-dotenv = "*"
+flask-bootstrap = "*"
 
 [requires]
-python_version = "3.6"
+python_version = "*"

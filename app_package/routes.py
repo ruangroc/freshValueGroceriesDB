@@ -1,7 +1,10 @@
 from flask import json, jsonify, request, render_template, make_response
+from psycopg2 import sql, extras
+
+from app.db import db_pool
 from app_package import app
 
-from app_package.db_connector.db_connector import connect_to_database, execute_query
+# Will need to change the db connection process and stuff to work with postgres
 
 ################################################
 # Index
