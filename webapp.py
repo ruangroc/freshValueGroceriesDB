@@ -1,6 +1,6 @@
 # This is a top-level script that defines which flask app you want to run
 from app_package import app
-from createdatabase import createdatabase
+from create_database import createdatabase
 
 import sys
 import os
