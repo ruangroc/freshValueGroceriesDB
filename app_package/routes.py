@@ -19,87 +19,120 @@ def index():
 ################################################
 @app.route('/customers')
 def customers_page():
-    print('Fetching and rendering Customers page', flush=True)
     db_conn = db_pool.getconn()
     cursor = db_conn.cursor()
+
     cursor.execute("SELECT CustomerID, Name, PhoneNumber, RewardsPts FROM Customers;")
     result = cursor.fetchall()
+
     cursor.close()
     db_pool.putconn(db_conn)
-    print('Customers table query returns:', result, flush=True)
     return render_template('customers.html', rows=result)
 
 @app.route('/new-customer', methods=['POST'])
 def insert_new_customer():
-    print('Inserting new customer into the database', flush=True)
     db_conn = db_pool.getconn()
     cursor = db_conn.cursor()
-    info = request.get_json(force=True)
 
+    info = request.get_json(force=True)
     query =  """INSERT INTO Customers 
                 (Name, PhoneNumber, RewardsPts) 
                 VALUES (%s, %s, %s);"""
     data = (info["name"], info["phone"], info["points"])
+
     cursor.execute(query, data)
     db_conn.commit()
+
     cursor.close()
     db_pool.putconn(db_conn)
     return make_response('Customer added!', 200)
 
 @app.route('/search-customers-name', methods=['POST'])
 def search_customers_by_name():
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     search_term = request.get_json(force=True)["input"]
     query =  """SELECT CustomerID, Name, PhoneNumber, RewardsPts 
                     FROM Customers WHERE Name = %s;"""
     data = (search_term,)
-    result = execute_query(db_connection, query, data).fetchall()
-    print('Query returns:', result, flush=True)
+
+    cursor.execute(query, data)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/search-customers-phone', methods=['POST'])
 def search_customers_by_phone_number():
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     search_term = request.get_json(force=True)["input"]
     query =  """SELECT CustomerID, Name, PhoneNumber, RewardsPts 
                     FROM Customers WHERE PhoneNumber = %s;"""
     data = (search_term,)
-    result = execute_query(db_connection, query, data).fetchall()
-    print('Query returns:', result, flush=True)
+
+    cursor.execute(query, data)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/search-customers-pts', methods=['POST'])
 def search_customers_by_points():
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     search_terms = request.get_json(force=True)
-    query =  """SELECT `CustomerID`, `Name`, `PhoneNumber`, `RewardsPts` 
-                FROM Customers WHERE `RewardsPts` >= %s AND `RewardsPts` <= %s;"""
+    query =  """SELECT CustomerID, Name, PhoneNumber, RewardsPts 
+                FROM Customers WHERE RewardsPts >= %s AND RewardsPts <= %s;"""
     data = (search_terms["lower"], search_terms["upper"])
-    result = execute_query(db_connection, query, data).fetchall()
-    print('Query returns:', result, flush=True)
+
+    cursor.execute(query, data)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/delete-customer', methods=['POST'])
 def delete_customer():
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     customer_id = request.get_json(force=True)["customer_id"]
-    query =  """DELETE FROM `Customers` WHERE `CustomerID` = %s;"""
+    query =  """DELETE FROM Customers WHERE CustomerID = %s;"""
     data = (customer_id,)
-    execute_query(db_connection, query, data).fetchall()
+
+    cursor.execute(query, data)
+    db_conn.commit()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     message = 'Customer with ID ' + customer_id + ' removed from the database'
     return make_response(message, 200)
 
 @app.route('/update-customer', methods=['POST'])
 def update_customer():
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     info = request.get_json(force=True)
     data = (info["name"], info["phone"], info["points"], info["id"])
-    query = """UPDATE `Customers` 
-            SET `Name` = %s,
-                `PhoneNumber` = %s,
-                `RewardsPts` = %s
-            WHERE `CustomerID` = %s;"""
-    execute_query(db_connection, query, data)
+    query = """UPDATE Customers 
+            SET Name = %s,
+                PhoneNumber = %s,
+                RewardsPts = %s
+            WHERE CustomerID = %s;"""
+
+    cursor.execute(query, data)
+    db_conn.commit()
+    
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response('Updated customer information', 200)
 
 ################################################
