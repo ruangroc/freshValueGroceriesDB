@@ -434,121 +434,168 @@ def employees_page():
 
 @app.route('/get-shifts', methods=['POST'])
 def get_shifts_for_employee():
-    print('Fetching and returning shifts that a given employee works', flush=True)
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
 
     # Get the ID of the employee to view shifts for
     employee_id = request.get_json(force=True)['employee_id']
-    print('Received this employee ID:', employee_id, flush=True)
+    query = """SELECT Employees.Name, Shifts.ShiftID, Shifts.Day, 
+            Shifts.StartTime, Shifts.EndTime FROM Shifts
+            JOIN EmployeeShifts ON Shifts.ShiftID = EmployeeShifts.ShiftID
+            JOIN Employees ON EmployeeShifts.EmployeeID = Employees.EmployeeID
+            WHERE Employees.EmployeeID = %s;"""
+    data = (employee_id,)
 
-    # Construct the query
-    string_query = """SELECT Employees.Name, Shifts.ShiftID, Shifts.Day, 
-            Shifts.StartTime, Shifts.EndTime FROM `Shifts`
-            JOIN `EmployeeShifts` ON Shifts.ShiftID = EmployeeShifts.ShiftID
-            JOIN `Employees` ON EmployeeShifts.EmployeeID = Employees.EmployeeID
-            WHERE Employees.EmployeeID = {0};"""
-    query = string_query.format(employee_id)
-    result = execute_query(db_connection, query).fetchall()
-    print('Get shifts query returns:', result, flush=True)
+    cursor.execute(query, data)
+    result = cursor.fetchall()
 
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/new-employee', methods=['POST'])
 def insert_new_employee():
-    print('Inserting new employee into the database', flush=True)
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     info = request.get_json(force=True)
-    string_query =  """INSERT INTO `Employees` 
-                    (`Name`, `HourlyWage`, `Responsibilities`, `SickDays`) 
-                    VALUES (%s, %s, %s, %s);"""
+    query = """INSERT INTO Employees 
+                (Name, HourlyWage, Responsibilities, SickDays) 
+                VALUES (%s, %s, %s, %s);"""
     data = (info["name"], info["wage"], info["duties"], info["sick_days"])
-    execute_query(db_connection, string_query, data)
+
+    cursor.execute(query, data)
+    db_conn.commit()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response('Employee added!', 200)
 
 @app.route('/search-employees-id', methods=['POST'])
 def search_employees_by_id():
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     info = request.get_json(force=True)
-    query =  """SELECT `EmployeeID`, `Name`, `HourlyWage`, `Responsibilities`, 
-                `SickDays` FROM `Employees` WHERE `EmployeeID` = %s;"""
+    query =  """SELECT EmployeeID, Name, HourlyWage, Responsibilities, 
+                SickDays FROM Employees WHERE EmployeeID = %s;"""
     data = (info["id"],)
-    result = execute_query(db_connection, query, data).fetchall()
-    print('Query returns:', result, flush=True)
+
+    cursor.execute(query, data)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/search-employees-name', methods=['POST'])
 def search_employees_by_name():
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     info = request.get_json(force=True)
-    query =  """SELECT `EmployeeID`, `Name`, `HourlyWage`, `Responsibilities`, 
-                `SickDays` FROM `Employees` WHERE `Name` = %s;"""
+    query =  """SELECT EmployeeID, Name, HourlyWage, Responsibilities, 
+                SickDays FROM Employees WHERE Name = %s;"""
     data = (info["name"],)
-    result = execute_query(db_connection, query, data).fetchall()
-    print('Query returns:', result, flush=True)
+
+    cursor.execute(query, data)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/search-employees-duties', methods=['POST'])
 def search_employees_by_duties():
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     info = request.get_json(force=True)
-    query =  """SELECT `EmployeeID`, `Name`, `HourlyWage`, `Responsibilities`, 
-                `SickDays` FROM `Employees` WHERE `Responsibilities` = %s;"""
+    query =  """SELECT EmployeeID, Name, HourlyWage, Responsibilities, 
+                SickDays FROM Employees WHERE Responsibilities = %s;"""
     data = (info["duties"],)
-    result = execute_query(db_connection, query, data).fetchall()
-    print('Query returns:', result, flush=True)
+
+    cursor.execute(query, data)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/search-employees-wage', methods=['POST'])
 def search_employees_by_wage():
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     info = request.get_json(force=True)
-    query =  """SELECT `EmployeeID`, `Name`, `HourlyWage`, `Responsibilities`, 
-                `SickDays` FROM `Employees` WHERE `HourlyWage` = %s;"""
+    query =  """SELECT EmployeeID, Name, HourlyWage, Responsibilities, 
+                SickDays FROM Employees WHERE HourlyWage = %s;"""
     data = (info["wage"],)
-    result = execute_query(db_connection, query, data).fetchall()
-    print('Query returns:', result, flush=True)
+
+    cursor.execute(query, data)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/search-employees-sick-days', methods=['POST'])
 def search_employees_by_sick_days():
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     info = request.get_json(force=True)
-    query =  """SELECT `EmployeeID`, `Name`, `HourlyWage`, `Responsibilities`, 
-                `SickDays` FROM `Employees` WHERE `SickDays` = %s;"""
+    query =  """SELECT EmployeeID, Name, HourlyWage, Responsibilities, 
+                SickDays FROM Employees WHERE SickDays = %s;"""
     data = (info["sickdays"],)
-    result = execute_query(db_connection, query, data).fetchall()
-    print('Query returns:', result, flush=True)
+
+    cursor.execute(query, data)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/delete-employee', methods=['POST'])
 def delete_employee():
-    db_connection = connect_to_database()
-    employee_id = request.get_json(force=True)["employee_id"]
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
 
-    # delete from the Employees table
-    query =  """DELETE FROM `Employees` WHERE `EmployeeID` = %s;"""
+    # Delete from the Employees table
+    employee_id = request.get_json(force=True)["employee_id"]
+    query =  """DELETE FROM Employees WHERE EmployeeID = %s;"""
     data = (employee_id,)
-    execute_query(db_connection, query, data)
+    cursor.execute(query, data)
+    db_conn.commit()
 
     # delete rows with null foreign keys from the EmployeeShifts table
-    query = """DELETE FROM `EmployeeShifts` WHERE `EmployeeID` IS NULL OR `ShiftID` IS NULL"""
-    execute_query(db_connection, query)
+    query = """DELETE FROM EmployeeShifts WHERE EmployeeID IS NULL OR ShiftID IS NULL"""
+    cursor.execute(query, data)
+    db_conn.commit()
 
+    cursor.close()
+    db_pool.putconn(db_conn)
     message = 'Employee with ID ' + employee_id + ' removed from the database'
     return make_response(message, 200)
 
 @app.route('/update-employee', methods=['POST'])
 def update_employee():
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     info = request.get_json(force=True)
     data = (info["name"], info["wage"], info["duties"], info["sick_days"], info["id"])
-    query = """UPDATE `Employees` 
-                SET `Name` = %s,
-                    `HourlyWage` = %s,
-                    `Responsibilities` = %s,
-                    `SickDays` = %s
-                WHERE `EmployeeID` = %s;"""
-    execute_query(db_connection, query, data)
+    query = """UPDATE Employees 
+                SET Name = %s,
+                    HourlyWage = %s,
+                    Responsibilities = %s,
+                    SickDays = %s
+                WHERE EmployeeID = %s;"""
+    cursor.execute(query, data)
+    db_conn.commit()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response('Updated employee information', 200)
 
 
