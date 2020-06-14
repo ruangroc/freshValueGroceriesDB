@@ -696,7 +696,6 @@ def assign_shift():
         query = """INSERT INTO EmployeeShifts (EmployeeID, ShiftID) VALUES (%s, %s);"""
         data = (employee_id, shift_id)
         cursor.execute(query, data)
-        result = cursor.fetchall()
         db_conn.commit()
         cursor.close()
         db_pool.putconn(db_conn)
