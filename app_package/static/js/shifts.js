@@ -139,10 +139,6 @@ function viewEmployeesButtonClicked() {
 function assignShift() {
     shift_id = Number(document.getElementById('shiftDropdown').value);
     employee_id = Number(document.getElementById('employeeDropdown').value);
-    if (!shift_id || !employee_id) {
-        alert('Please provide valid shift and employee IDs');
-        return;
-    }
 
     info = {
         "shift_id": shift_id,
@@ -161,13 +157,7 @@ function assignShift() {
         return response.text();
     }).then(function (text) {
         console.log('Server response:', text);
-        if (text == 'Invalid ShiftID') {
-            alert('Invalid ShiftID');
-        }
-        else if (text == 'Invalid EmployeeID') {
-            alert('Invalid EmployeeID');
-        }
-        else if (text == 'Employee already works this shift!') {
+        if (text == 'Employee already works this shift!') {
             alert('Employee already works this shift!');
         }
     });
