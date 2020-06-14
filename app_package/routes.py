@@ -424,7 +424,7 @@ def employees_page():
     cursor = db_conn.cursor()
 
     query =  """SELECT EmployeeID, Name, HourlyWage, Responsibilities, 
-                SickDays FROM Employees;"""
+                SickDays FROM Employees ORDER BY EmployeeID ASC;"""
     cursor.execute(query)
     result = cursor.fetchall()
 
@@ -607,7 +607,9 @@ def shifts_page():
     db_conn = db_pool.getconn()
     cursor = db_conn.cursor()
 
-    cursor.execute("SELECT ShiftID, Day, StartTime, EndTime FROM Shifts;")
+    query = """SELECT ShiftID, Day, StartTime, EndTime 
+                FROM Shifts ORDER BY ShiftID ASC;"""
+    cursor.execute(query)
     result = cursor.fetchall()
 
     cursor.close()
@@ -616,121 +618,130 @@ def shifts_page():
 
 @app.route('/new-shift', methods=['POST'])
 def insert_new_shift():
-    print('Inserting new shift into the database', flush=True)
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
     info = request.get_json(force=True)
 
     # check if the shift already exists
-    query = """SELECT Day, StartTime, EndTime FROM `Shifts` 
+    query = """SELECT Day, StartTime, EndTime FROM Shifts 
             WHERE Day = %s AND StartTime = %s AND EndTime = %s;"""
     data = (info["day"], info["start_time"], info["end_time"])
-    result = execute_query(db_connection, query, data).fetchall()
-    print('result:', result, flush=True)
+    cursor.execute(query, data)
+    result = cursor.fetchall()
     if result:
+        cursor.close()
+        db_pool.putconn(db_conn)
         return make_response('Shift already exists!', 500)
     else:
-        query = """INSERT INTO `Shifts` 
-                (`Day`, `StartTime`, `EndTime`)  
+        query = """INSERT INTO Shifts (Day, StartTime, EndTime)  
                 VALUES (%s, %s, %s);"""
         data = (info["day"], info["start_time"], info["end_time"])
-        execute_query(db_connection, query, data)
+        cursor.execute(query, data)
+        db_conn.commit()
+        cursor.close()
+        db_pool.putconn(db_conn)
         return make_response('Shift added!', 200)
 
 @app.route('/get-employees', methods=['POST'])
 def get_employees_for_shift():
-    print('Fetching and returning employees assigned to a given shift', flush=True)
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
 
     # Get the ID of the employee to view shifts for
     shift_id = request.get_json(force=True)['shift_id']
-    print('Received this shift ID:', shift_id, flush=True)
+    query =  """SELECT Shifts.ShiftID, Employees.Name FROM Shifts
+                JOIN EmployeeShifts ON Shifts.ShiftID = EmployeeShifts.ShiftID
+                JOIN Employees ON EmployeeShifts.EmployeeID = Employees.EmployeeID
+                WHERE Shifts.ShiftID = %s;"""
+    data = (shift_id,)
+    cursor.execute(query, data)
+    result = cursor.fetchall()
 
-    # Construct the query
-    string_query =  """SELECT Shifts.ShiftID, Employees.Name FROM `Shifts`
-                    JOIN `EmployeeShifts` ON Shifts.ShiftID = EmployeeShifts.ShiftID
-                    JOIN `Employees` ON EmployeeShifts.EmployeeID = Employees.EmployeeID
-                    WHERE Shifts.ShiftID = {0};"""
-    query = string_query.format(shift_id)
-    result = execute_query(db_connection, query).fetchall()
-    print('Get employees query returns:', result, flush=True)
-
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/assign-shifts-dropdown', methods=['POST'])
 def assign_shifts_dropdown():
-    print('Fetching List of Shift IDs')
-    db_connection = connect_to_database()
-    query = """SELECT ShiftID FROM `Shifts`;"""
-    result = execute_query(db_connection, query).fetchall()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
+    query = """SELECT ShiftID FROM Shifts ORDER BY ShiftID ASC;"""
+    cursor.execute(query)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/assign-shift', methods=['POST'])
 def assign_shift():
-    print('Inserting new entry into EmployeeShifts')
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
 
     shift_id = request.get_json(force=True)['shift_id']
     employee_id = request.get_json(force=True)['employee_id']
-    print('Received shiftID:', shift_id, flush=True)
-    print('Received employeeID:', employee_id, flush=True)
-
-    # check if shiftID is valid
-    query = """SELECT ShiftID FROM `Shifts` WHERE ShiftID = %s"""
-    data = (shift_id,)
-    result = execute_query(db_connection, query, data).fetchall()
-    if result == ():
-        return make_response('Invalid ShiftID', 500)
-
-    # check if employeeID is valid
-    query = """SELECT EmployeeID FROM `Employees` WHERE EmployeeID = %s"""
-    data = (employee_id,)
-    result = execute_query(db_connection, query, data).fetchall()
-    if result == ():
-        return make_response('Invalid EmployeeID', 500)
 
     # check if assignment already exists
-    query = """SELECT EmployeeID, ShiftID FROM `EmployeeShifts` 
+    query = """SELECT EmployeeID, ShiftID FROM EmployeeShifts 
             WHERE EmployeeID = %s AND ShiftID = %s;"""
     data = (employee_id, shift_id)
-    result = execute_query(db_connection, query, data).fetchall()
-    print('result:', result, flush=True)
+    cursor.execute(query, data)
+    result = cursor.fetchall()
     if result:
+        cursor.close()
+        db_pool.putconn(db_conn)
         return make_response('Employee already works this shift!', 500)
     else:
-        query = """INSERT INTO `EmployeeShifts` (`EmployeeID`, `ShiftID`) VALUES (%s, %s);"""
+        query = """INSERT INTO EmployeeShifts (EmployeeID, ShiftID) VALUES (%s, %s);"""
         data = (employee_id, shift_id)
-        execute_query(db_connection, query, data)
+        cursor.execute(query, data)
+        result = cursor.fetchall()
+        db_conn.commit()
+        cursor.close()
+        db_pool.putconn(db_conn)
         return make_response('Assigned a shift to an employee!', 200)
 
 @app.route('/delete-shift', methods=['POST'])
 def delete_shift():
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     shift_id = request.get_json(force=True)["shift_id"]
 
     # delete from the Employees table
-    query =  """DELETE FROM `Shifts` WHERE `ShiftID` = %s;"""
+    query =  """DELETE FROM Shifts WHERE ShiftID = %s;"""
     data = (shift_id,)
-    execute_query(db_connection, query, data)
+    cursor.execute(query, data)
+    db_conn.commit()
 
     # delete rows with null foreign keys from the EmployeeShifts table
-    query = """DELETE FROM `EmployeeShifts` WHERE `EmployeeID` IS NULL OR `ShiftID` IS NULL"""
-    execute_query(db_connection, query)
-
+    query = """DELETE FROM EmployeeShifts WHERE EmployeeID IS NULL OR ShiftID IS NULL"""
+    cursor.execute(query)
+    db_conn.commit()
+    
+    cursor.close()
+    db_pool.putconn(db_conn)
     message = 'Shift with ID ' + shift_id + ' removed from the database'
     return make_response(message, 200)
 
 @app.route('/update-shift', methods=['POST'])
 def update_shift():
-    print("Updating Shift in database", flush=True)
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     info = request.get_json(force=True)
     data = (info["day"], info["start_time"], info["end_time"], info["id"])
-    query = """UPDATE `Shifts` 
-                SET `Day` = %s,
-                    `StartTime` = %s,
-                    `EndTime` = %s
-                WHERE `ShiftID` = %s;"""
-    execute_query(db_connection, query, data)
+    query = """UPDATE Shifts 
+                SET Day = %s,
+                    StartTime = %s,
+                    EndTime = %s
+                WHERE ShiftID = %s;"""
+    cursor.execute(query, data)
+    db_conn.commit()
+    
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response('Updated shift information', 200)
 
 ################################################
@@ -741,7 +752,7 @@ def inventory_page():
     db_conn = db_pool.getconn()
     cursor = db_conn.cursor()
 
-    cursor.execute("SELECT PLU, Name, Description, UnitCost, Quantity FROM Inventory;")
+    cursor.execute("SELECT PLU, Name, Description, UnitCost, Quantity FROM Inventory ORDER BY PLU ASC;")
     result = cursor.fetchall()
 
     cursor.close()
