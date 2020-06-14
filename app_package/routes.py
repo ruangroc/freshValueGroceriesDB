@@ -394,7 +394,7 @@ def employee_order_dropdown():
     db_conn = db_pool.getconn()
     cursor = db_conn.cursor()
 
-    query = """SELECT Name FROM Employees ORDER BY Name;"""
+    query = """SELECT EmployeeID FROM Employees ORDER BY Name;"""
     cursor.execute(query)
     result = cursor.fetchall()
 

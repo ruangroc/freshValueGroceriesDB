@@ -17,5 +17,7 @@ A database for managing Employees, Shifts, Inventory, and Orders at Fresh Value 
 
 # Notes for prepping this to be hosted on Heroku
 
-1. 
+1. Installed pgAdmin in order to create the tables in the Heroku database. Used this guide: https://medium.com/analytics-vidhya/how-to-use-pgadmin-to-connect-to-a-heroku-database-c69b7cbfccd8
+2. Referred to a classmate's github repo as to how to configure the app to be able to deploy it on Heroku. Github link: https://github.com/laurenshareshian/grademeapp
+
 
