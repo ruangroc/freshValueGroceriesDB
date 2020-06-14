@@ -752,7 +752,9 @@ def inventory_page():
     db_conn = db_pool.getconn()
     cursor = db_conn.cursor()
 
-    cursor.execute("SELECT PLU, Name, Description, UnitCost, Quantity FROM Inventory ORDER BY PLU ASC;")
+    query = """SELECT PLU, Name, Description, UnitCost, Quantity 
+                FROM Inventory ORDER BY PLU ASC;"""
+    cursor.execute(query)
     result = cursor.fetchall()
 
     cursor.close()
@@ -761,55 +763,77 @@ def inventory_page():
 
 @app.route('/new-inventory', methods=['POST'])
 def insert_new_inventory():
-    print("Inserting new inventory into database", flush=True)
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     item = request.get_json(force=True)['item']
     description = request.get_json(force=True)['description']
     unit = float(request.get_json(force=True)['unit'])
     quantity = int(request.get_json(force=True)['quantity'])
-    query = """INSERT INTO `Inventory` (`Name`, `Description`, `UnitCost`, `Quantity`) VALUES (%s, %s, %s, %s);"""
+
+    query = """INSERT INTO Inventory (Name, Description, UnitCost, Quantity) 
+                VALUES (%s, %s, %s, %s);"""
     data = (item, description, unit, quantity)
-    execute_query(db_connection, query, data)
+    cursor.execute(query, data)
+    db_conn.commit()
+    
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response('Inventory added!', 200)
 
 @app.route('/search-inventory-name', methods=['POST'])
 def search_inventory_by_name():
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     search_term = request.get_json(force=True)["name"]
-    query = """SELECT PLU, Name, Description, UnitCost, Quantity FROM Inventory WHERE Name LIKE %s;"""
+    query = """SELECT PLU, Name, Description, UnitCost, Quantity 
+                FROM Inventory WHERE Name LIKE %s;"""
     data = (["%" + search_term + "%"])
-    result = execute_query(db_connection, query, data).fetchall()
-    print('Query returns:', result, flush=True)
+
+    cursor.execute(query, data)
+    result = cursor.fetchall()
+
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response(json.dumps(result, indent=4, sort_keys=True, default=str), 200)
 
 @app.route('/update-inventory', methods=['POST'])
 def update_inventory():
-    print("Updating Inventory in database", flush=True)
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     plu = request.get_json(force=True)['plu']
     item = request.get_json(force=True)['item']
     description = request.get_json(force=True)['description']
     unit = float(request.get_json(force=True)['unit'])
     quantity = int(request.get_json(force=True)['quantity'])
-    query = """UPDATE `Inventory`
-            SET
-                `Name` = %s,
-                `Description` = %s,
-                `UnitCost` = %s,
-                `Quantity` = %s
-            WHERE
-                `PLU` = %s;"""
+
+    query = """UPDATE Inventory
+            SET Name = %s,
+                Description = %s,
+                UnitCost = %s,
+                Quantity = %s
+            WHERE PLU = %s;"""
     data = (item, description, unit, quantity, plu)
-    execute_query(db_connection, query, data)
+    cursor.execute(query, data)
+    db_conn.commit()
+    
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response('Inventory added!', 200)
 
 @app.route('/delete-inventory', methods=['POST'])
 def delete_inventory():
-    print("Deleting Inventory from database", flush=True)
-    db_connection = connect_to_database()
+    db_conn = db_pool.getconn()
+    cursor = db_conn.cursor()
+
     plu = request.get_json(force=True)["info"]
-    print("plu:", plu)
-    query = """DELETE FROM `Inventory` WHERE `PLU` = %s;"""
+    query = """DELETE FROM Inventory WHERE PLU = %s;"""
     data = (plu,)
-    execute_query(db_connection, query, data)
+    cursor.execute(query, data)
+    db_conn.commit()
+    
+    cursor.close()
+    db_pool.putconn(db_conn)
     return make_response('Inventory deleted!', 200)
